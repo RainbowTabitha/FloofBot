@@ -26,44 +26,52 @@ class Birthday(commands.Cog):
 
     @commands.slash_command()
     async def set_birthday(self, ctx):
-        """Set your birthday using dropdowns for month and day."""
+        """Set your birthday using a dropdown for month and input for day."""
         # Create month options
         month_options = [discord.SelectOption(label=month, value=str(index + 1)) for index, month in enumerate([
             "January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"
         ])]
 
-        # Create day options
-        day_options = [discord.SelectOption(label=str(day), value=str(day)) for day in range(1, 32)]
-
-        # Create dropdowns
+        # Create dropdown for month
         month_select = discord.ui.Select(placeholder="Select your birth month", options=month_options)
-        day_select = discord.ui.Select(placeholder="Select your birth day", options=day_options)
 
-        # Create a view to hold the dropdowns
+        # Create a view to hold the month dropdown
         view = discord.ui.View()
         view.add_item(month_select)
-        view.add_item(day_select)
 
-        # Send the dropdowns to the user
-        await ctx.respond("Please select your birthday:", view=view)
+        # Send the month dropdown to the user
+        await ctx.respond("Please select your birth month:", view=view)
 
-        # Wait for the user to select both month and day
-        def check(interaction):
+        # Wait for the user to select a month
+        def check_month(interaction):
             return interaction.user == ctx.author and interaction.data['component_type'] == 3  # 3 is the type for Select
 
-        # Wait for the user to select a month and day
         try:
-            interaction = await self.bot.wait_for("interaction", check=check, timeout=60.0)
-            month = month_select.values[0]
-            day = day_select.values[0]
+            month_interaction = await self.bot.wait_for("interaction", check=check_month, timeout=60.0)
+            month = int(month_select.values[0])  # Get the selected month
+
+            # Ask the user to input their birth day
+            await month_interaction.response.send_message("Please type your birth day (1-31):")
+
+            # Wait for the user to respond with the day
+            def check_day(message):
+                return message.author == ctx.author and message.channel == ctx.channel
+
+            day_message = await self.bot.wait_for("message", check=check_day, timeout=60.0)
+            day = day_message.content.strip()
+
+            # Validate the day input
+            if not day.isdigit() or not (1 <= int(day) <= 31):
+                await ctx.respond("Please enter a valid day between 1 and 31.")
+                return
 
             # Format the birthday as YYYY-MM-DD
-            birthday = f"2023-{month.zfill(2)}-{day.zfill(2)}"  # Using a fixed year for simplicity
+            birthday = f"2023-{month:02}-{int(day):02}"  # Using a fixed year for simplicity
             user_id = str(ctx.author.id)
             birthday_data[user_id] = birthday
             save_birthdays()
-            await interaction.response.send_message(f"Your birthday has been set to {birthday}!")
+            await ctx.respond(f"Your birthday has been set to {birthday}!")
 
         except Exception as e:
             await ctx.respond("You took too long to respond or an error occurred.")
