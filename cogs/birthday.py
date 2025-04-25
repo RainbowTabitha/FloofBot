@@ -68,13 +68,19 @@ class Birthday(commands.Cog):
 
             # Format the birthday as YYYY-MM-DD
             birthday = f"2023-{month:02}-{int(day):02}"  # Using a fixed year for simplicity
-            user_id = str(ctx.author.id)
+
+            # Extract month name for the DM response
             month_name = ["January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"][month - 1]
+                          "July", "August", "September", "October", "November", "December"][month - 1]
+            formatted_birthday = f"{month_name} {int(day)}"
+
+            user_id = str(ctx.author.id)
             birthday_data[user_id] = birthday
             save_birthdays()
-            formatted_birthday = f"{month_name} {int(day)}"
-            await ctx.respond(f"Your birthday has been set to {formatted_birthday}!")
+
+            # Send the confirmation message in a DM
+            await ctx.author.send(f"Your birthday has been set to {formatted_birthday}!")
+
         except Exception as e:
             await ctx.respond("You took too long to respond or an error occurred.")
 
