@@ -1,0 +1,6 @@
+requests
+py-cord
+dadjokes
+box
+aiohttp
+Pillow
