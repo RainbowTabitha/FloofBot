@@ -51,8 +51,8 @@ class Birthday(commands.Cog):
             month_interaction = await self.bot.wait_for("interaction", check=check_month, timeout=60.0)
             month = int(month_select.values[0])  # Get the selected month
 
-            # Ask the user to input their birth day in DMs
-            await month_interaction.response.send_message("Please type your birth day (1-31):")
+            # Acknowledge the month selection
+            await month_interaction.response.send_message("You selected: " + month_options[month - 1].label + ". Please type your birth day (1-31):")
 
             # Wait for the user to respond with the day
             def check_day(message):
