@@ -3,6 +3,8 @@ from discord.ext import commands, tasks
 import json
 import os
 from datetime import datetime
+import pytz  # Import pytz for timezone handling
+import asyncio
 
 # File to store birthday data
 BIRTHDAY_FILE = 'birthdays.json'
@@ -51,8 +53,8 @@ class Birthday(commands.Cog):
             month_interaction = await self.bot.wait_for("interaction", check=check_month, timeout=60.0)
             month = int(month_select.values[0])  # Get the selected month
 
-            # Acknowledge the month selection
-            await month_interaction.response.send_message("You selected: " + month_options[month - 1].label + ". Please type your birth day (1-31):")
+            # Acknowledge the month selection with an ephemeral message
+            await month_interaction.response.send_message(f"You selected: {month_options[month - 1].label}. Please type your birth day (1-31):", ephemeral=True)
 
             # Wait for the user to respond with the day
             def check_day(message):
@@ -79,20 +81,32 @@ class Birthday(commands.Cog):
             save_birthdays()
 
             # Send the confirmation message in a DM
-            await ctx.respond(f"Your birthday has been set to {formatted_birthday}!")
+            await ctx.author.send(f"Your birthday has been set to {formatted_birthday}!")
 
         except Exception as e:
-            await ctx.respond("You took too long to respond or an error occurred.")
+            # Handle the error gracefully
+            if isinstance(e, discord.errors.NotFound):
+                await ctx.author.send("An error occurred while processing your request. Please try again.")
+            else:
+                await ctx.author.send("You took too long to respond or an error occurred.")
 
     @tasks.loop(hours=24)  # Check every 24 hours
     async def check_birthdays(self):
-        today = datetime.now().strftime("%Y-%m-%d")
-        for user_id, birthday in birthday_data.items():
-            if birthday == today:
-                user = self.bot.get_user(int(user_id))
-                if user:
-                    channel = self.bot.get_channel(1361514241865158687)
-                    await channel.send(f"🎉 Happy Birthday {user.mention}! 🎉")
+        # Get the current time in EST
+        est = pytz.timezone('America/New_York')
+        now = datetime.now(est)
+
+        # Check if it's 12 AM
+        if now.hour == 0 and now.minute == 0:
+            today = now.strftime("%Y-%m-%d")
+            for user_id, birthday in birthday_data.items():
+                if birthday == today:
+                    user = self.bot.get_user(int(user_id))
+                    if user:
+                        channel = self.bot.get_channel(1361514241865158687)
+                        await channel.send(f"🎉 Happy Birthday {user.mention}! 🎉")
+        else:
+            await asyncio.sleep(60)
 
     @check_birthdays.before_loop
     async def before_check_birthdays(self):
