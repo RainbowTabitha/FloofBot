@@ -79,10 +79,10 @@ class Birthday(commands.Cog):
             save_birthdays()
 
             # Send the confirmation message in a DM
-            await ctx.author.send(f"Your birthday has been set to {formatted_birthday}!")
+            await ctx.respond(f"Your birthday has been set to {formatted_birthday}!")
 
         except Exception as e:
-            await ctx.author.send("You took too long to respond or an error occurred.")
+            await ctx.respond("You took too long to respond or an error occurred.")
 
     @tasks.loop(hours=24)  # Check every 24 hours
     async def check_birthdays(self):
