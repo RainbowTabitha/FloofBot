@@ -69,10 +69,12 @@ class Birthday(commands.Cog):
             # Format the birthday as YYYY-MM-DD
             birthday = f"2023-{month:02}-{int(day):02}"  # Using a fixed year for simplicity
             user_id = str(ctx.author.id)
+            month_name = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"][month - 1]
             birthday_data[user_id] = birthday
             save_birthdays()
-            await ctx.respond(f"Your birthday has been set to {birthday}!")
-
+            formatted_birthday = f"{month_name} {int(day)}"
+            await ctx.respond(f"Your birthday has been set to {formatted_birthday}!")
         except Exception as e:
             await ctx.respond("You took too long to respond or an error occurred.")
 
