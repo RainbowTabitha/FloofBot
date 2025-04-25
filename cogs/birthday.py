@@ -40,8 +40,8 @@ class Birthday(commands.Cog):
         view = discord.ui.View()
         view.add_item(month_select)
 
-        # Send the month dropdown to the user
-        await ctx.respond("Please select your birth month:", view=view)
+        # Send the month dropdown to the user in DMs
+        await ctx.author.send("Please select your birth month:", view=view)
 
         # Wait for the user to select a month
         def check_month(interaction):
@@ -51,19 +51,19 @@ class Birthday(commands.Cog):
             month_interaction = await self.bot.wait_for("interaction", check=check_month, timeout=60.0)
             month = int(month_select.values[0])  # Get the selected month
 
-            # Ask the user to input their birth day
+            # Ask the user to input their birth day in DMs
             await month_interaction.response.send_message("Please type your birth day (1-31):")
 
             # Wait for the user to respond with the day
             def check_day(message):
-                return message.author == ctx.author and message.channel == ctx.channel
+                return message.author == ctx.author and message.channel == ctx.author.dm_channel
 
             day_message = await self.bot.wait_for("message", check=check_day, timeout=60.0)
             day = day_message.content.strip()
 
             # Validate the day input
             if not day.isdigit() or not (1 <= int(day) <= 31):
-                await ctx.respond("Please enter a valid day between 1 and 31.")
+                await ctx.author.send("Please enter a valid day between 1 and 31.")
                 return
 
             # Format the birthday as YYYY-MM-DD
@@ -82,7 +82,7 @@ class Birthday(commands.Cog):
             await ctx.author.send(f"Your birthday has been set to {formatted_birthday}!")
 
         except Exception as e:
-            await ctx.respond("You took too long to respond or an error occurred.")
+            await ctx.author.send("You took too long to respond or an error occurred.")
 
     @tasks.loop(hours=24)  # Check every 24 hours
     async def check_birthdays(self):
