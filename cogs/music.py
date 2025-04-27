@@ -150,6 +150,10 @@ class Music(commands.Cog):
                 if channel:
                     embed = discord.Embed(title="Now Playing", description=title, color=discord.Color.blue())
                     await channel.send(embed=embed)
+            # Remove the current song from the queue
+            queue.popleft()
+            if guild.id in self.song_owners and self.song_owners[guild.id]:
+                self.song_owners[guild.id].pop(0)
         except Exception as e:
             if guild.id in self.music_channels:
                 channel = guild.get_channel(self.music_channels[guild.id])
