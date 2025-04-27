@@ -5,3 +5,4 @@ box
 aiohttp
 Pillow
 pytz
+yt-dlp
