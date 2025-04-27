@@ -22,8 +22,8 @@ class Music(commands.Cog):
         return any(role.name.lower() == 'dj' for role in member.roles)
 
     @commands.slash_command()
-    async def play(self, ctx, url: str):
-        """Play a song from YouTube URL"""
+    async def play(self, ctx, query: str):
+        """Play a song from YouTube URL or search query"""
         if not ctx.author.voice:
             embed = discord.Embed(title="Error", description="You need to be in a voice channel!", color=discord.Color.red())
             await ctx.respond(embed=embed)
@@ -50,29 +50,81 @@ class Music(commands.Cog):
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                title = info['title']
-                url2 = info['url']
-
-                # Add to queue
-                queue = self.get_queue(ctx.guild.id)
-                queue.append((title, url2))
-                # Store who added the song
-                if ctx.guild.id not in self.song_owners:
-                    self.song_owners[ctx.guild.id] = []
-                self.song_owners[ctx.guild.id].append(ctx.author.id)
-
-                if len(queue) == 1:  # If this is the first song
-                    embed = discord.Embed(title="Added to Queue", description=f"Added {title} and starting playback!", color=discord.Color.green())
+                # Search for videos
+                search_results = ydl.extract_info(f"ytsearch5:{query}", download=False)['entries']
+                
+                if not search_results:
+                    embed = discord.Embed(title="Error", description="No results found!", color=discord.Color.red())
                     await message.edit_original_response(embed=embed)
-                    await self.play_next(ctx.guild)
-                else:
-                    embed = discord.Embed(title="Added to Queue", description=title, color=discord.Color.green())
-                    await message.edit_original_response(embed=embed)
+                    return
+
+                # Create select menu options
+                options = []
+                for i, result in enumerate(search_results, 1):
+                    title = result['title']
+                    duration = result.get('duration', 'Unknown')
+                    if isinstance(duration, int):
+                        minutes = duration // 60
+                        seconds = duration % 60
+                        duration = f"{minutes}:{seconds:02d}"
+                    options.append(discord.SelectOption(
+                        label=f"{i}. {title[:100]}",  # Discord has a 100 char limit for labels
+                        value=str(i-1),
+                        description=f"Duration: {duration}"
+                    ))
+
+                # Create select menu
+                select = discord.ui.Select(
+                    placeholder="Choose a song",
+                    options=options
+                )
+
+                # Create view
+                view = discord.ui.View()
+                view.add_item(select)
+
+                # Update message with select menu
+                embed = discord.Embed(title="Search Results", description="Please select a song:", color=discord.Color.blue())
+                await message.edit_original_response(embed=embed, view=view)
+
+                # Wait for selection
+                def check(interaction):
+                    return interaction.user == ctx.author and interaction.data['component_type'] == 3
+
+                try:
+                    interaction = await self.bot.wait_for("interaction", check=check, timeout=60.0)
+                    selected_index = int(interaction.data['values'][0])
+                    selected_video = search_results[selected_index]
+                    
+                    # Get the video URL
+                    info = ydl.extract_info(selected_video['id'], download=False)
+                    title = info['title']
+                    url2 = info['url']
+
+                    # Add to queue
+                    queue = self.get_queue(ctx.guild.id)
+                    queue.append((title, url2))
+                    # Store who added the song
+                    if ctx.guild.id not in self.song_owners:
+                        self.song_owners[ctx.guild.id] = []
+                    self.song_owners[ctx.guild.id].append(ctx.author.id)
+
+                    if len(queue) == 1:  # If this is the first song
+                        embed = discord.Embed(title="Added to Queue", description=f"Added {title} and starting playback!", color=discord.Color.green())
+                        await message.edit_original_response(embed=embed, view=None)
+                        await self.play_next(ctx.guild)
+                    else:
+                        embed = discord.Embed(title="Added to Queue", description=title, color=discord.Color.green())
+                        await message.edit_original_response(embed=embed, view=None)
+
+                except asyncio.TimeoutError:
+                    embed = discord.Embed(title="Timeout", description="You took too long to select a song!", color=discord.Color.red())
+                    await message.edit_original_response(embed=embed, view=None)
+                    return
 
         except Exception as e:
             embed = discord.Embed(title="Error", description=str(e), color=discord.Color.red())
-            await message.edit_original_response(embed=embed)
+            await message.edit_original_response(embed=embed, view=None)
 
     async def play_next(self, guild):
         queue = self.get_queue(guild.id)
