@@ -46,7 +46,7 @@ class Music(commands.Cog):
         }
 
         embed = discord.Embed(title="Searching", description="Looking for your song...", color=discord.Color.blue())
-        await ctx.respond(embed=embed)
+        message = await ctx.respond(embed=embed)
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -63,14 +63,16 @@ class Music(commands.Cog):
                 self.song_owners[ctx.guild.id].append(ctx.author.id)
 
                 if len(queue) == 1:  # If this is the first song
+                    embed = discord.Embed(title="Added to Queue", description=f"Added {title} and starting playback!", color=discord.Color.green())
+                    await message.edit_original_response(embed=embed)
                     await self.play_next(ctx.guild)
                 else:
                     embed = discord.Embed(title="Added to Queue", description=title, color=discord.Color.green())
-                    await ctx.respond(embed=embed)
+                    await message.edit_original_response(embed=embed)
 
         except Exception as e:
             embed = discord.Embed(title="Error", description=str(e), color=discord.Color.red())
-            await ctx.respond(embed=embed)
+            await message.edit_original_response(embed=embed)
 
     async def play_next(self, guild):
         queue = self.get_queue(guild.id)
