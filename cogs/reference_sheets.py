@@ -77,9 +77,11 @@ class ReferenceImages(commands.Cog):
         user_id = str(ctx.author.id)
         if user_id in reference_data and character_name in reference_data[user_id]:
             img_url = reference_data[user_id][character_name]
-            await ctx.send(f"Reference for {character_name}: {img_url}")
+            embed = discord.Embed(title=f"Reference for {character_name}", color=discord.Color.blue())
+            embed.set_image(url=img_url)
+            await ctx.respond(embed=embed)
         else:
-            await ctx.send(f"No reference image found for {character_name}.")
+            await ctx.respond(f"No reference image found for {character_name}.")
 
 # Add the cog to the bot
 async def setup(bot):
