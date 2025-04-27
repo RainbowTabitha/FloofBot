@@ -11,6 +11,7 @@ class Music(commands.Cog):
         self.now_playing = {}  # Server ID -> Current song
         self.voice_clients = {}  # Server ID -> Voice client
         self.song_owners = {}  # Server ID -> User ID of who added the song
+        self.music_channels = {}  # Server ID -> Channel ID for music messages
 
     def get_queue(self, guild_id):
         if guild_id not in self.queues:
@@ -28,6 +29,9 @@ class Music(commands.Cog):
             embed = discord.Embed(title="Error", description="You need to be in a voice channel!", color=discord.Color.red())
             await ctx.respond(embed=embed)
             return
+
+        # Store the channel where the command was used
+        self.music_channels[ctx.guild.id] = ctx.channel.id
 
         # Get or create voice client
         if ctx.guild.id not in self.voice_clients:
@@ -141,11 +145,17 @@ class Music(commands.Cog):
                     self.play_next(guild), self.bot.loop
                 )
             )
-            embed = discord.Embed(title="Now Playing", description=title, color=discord.Color.blue())
-            await guild.system_channel.send(embed=embed)
+            if guild.id in self.music_channels:
+                channel = guild.get_channel(self.music_channels[guild.id])
+                if channel:
+                    embed = discord.Embed(title="Now Playing", description=title, color=discord.Color.blue())
+                    await channel.send(embed=embed)
         except Exception as e:
-            embed = discord.Embed(title="Error", description=f"Error playing song: {str(e)}", color=discord.Color.red())
-            await guild.system_channel.send(embed=embed)
+            if guild.id in self.music_channels:
+                channel = guild.get_channel(self.music_channels[guild.id])
+                if channel:
+                    embed = discord.Embed(title="Error", description=f"Error playing song: {str(e)}", color=discord.Color.red())
+                    await channel.send(embed=embed)
             queue.popleft()
             if guild.id in self.song_owners and self.song_owners[guild.id]:
                 self.song_owners[guild.id].pop(0)
