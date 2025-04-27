@@ -13,6 +13,7 @@ from cogs.moderation import Moderation
 from cogs.leveling import Leveling
 from cogs.activity import Activity
 from cogs.birthday import Birthday
+from cogs.reference_sheets import ReferenceSheets
 
 from discord.ext import tasks
 from discord.ext import commands
@@ -47,6 +48,7 @@ bot.add_cog(Moderation(bot))
 bot.add_cog(Leveling(bot))
 bot.add_cog(Activity(bot))
 bot.add_cog(Birthday(bot))
+bot.add_cog(ReferenceSheets(bot))
 
 #Run Bot
 TOKEN = os.environ.get("FLOOF_TOKEN")
