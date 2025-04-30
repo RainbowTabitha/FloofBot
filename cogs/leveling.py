@@ -71,6 +71,12 @@ class Leveling(commands.Cog):
                     await message.author.add_roles(role)
                     await message.channel.send(f"{message.author.mention}, you have been given the role **{role_name}** for reaching level 3!")
 
+            # Check if the user reached level 5 and assign the role
+            if levels_data[guild_id][user_id]["level"] >= 4:
+                role = discord.utils.get(message.guild.roles, name=role_name)
+                if role:
+                    await message.author.add_roles(role)
+
         # Save levels data after each message
         save_levels()
 
