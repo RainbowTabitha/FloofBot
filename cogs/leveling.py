@@ -21,7 +21,7 @@ def save_levels():
 
 # Function to calculate XP needed for the next level
 def xp_needed(level):
-    return level * 500
+    return ((500 * level) // 2)
 
 class Leveling(commands.Cog):
     def __init__(self, bot):
@@ -67,7 +67,7 @@ class Leveling(commands.Cog):
             if levels_data[guild_id][user_id]["level"] >= 3:
                 role_name = "Verified Furry"
                 role = discord.utils.get(message.guild.roles, name=role_name)
-                if role:
+                if role and role not in message.author.roles:
                     await message.author.add_roles(role)
                     await message.channel.send(f"{message.author.mention}, you have been given the role **{role_name}** for reaching level 3!")
 
