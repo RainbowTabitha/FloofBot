@@ -101,6 +101,7 @@ class Activity(commands.Cog):
 
         # Send the initial message with the leaderboard
         message = await ctx.respond(embed=await send_activity_page(current_page))
+        message = await message.original_message()
 
         # Add reactions for pagination if there are multiple pages
         if total_pages > 1:
@@ -109,7 +110,7 @@ class Activity(commands.Cog):
 
         # Reaction handling
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"] and reaction.message.id == message.id
 
         while True:
             try:
