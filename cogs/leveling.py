@@ -64,7 +64,7 @@ class Leveling(commands.Cog):
             await message.channel.send(embed=embed)
 
             # Check if the user reached level 3 and assign the role
-            if levels_data[guild_id][user_id]["level"] >= 3:
+            if levels_data[guild_id][user_id]["level"] >= 5:
                 role_name = "Verified Furry"
                 role = discord.utils.get(message.guild.roles, name=role_name)
                 if role and role not in message.author.roles:
@@ -72,7 +72,7 @@ class Leveling(commands.Cog):
                     await message.channel.send(f"{message.author.mention}, you have been given the role **{role_name}** for reaching level 3!")
 
             # Check if the user reached level 5 and assign the role
-            if levels_data[guild_id][user_id]["level"] >= 4:
+            if levels_data[guild_id][user_id]["level"] >= 6:
                 role = discord.utils.get(message.guild.roles, name=role_name)
                 if role:
                     await message.author.add_roles(role)
@@ -187,7 +187,7 @@ class Leveling(commands.Cog):
             
         assigned_count = 0
         for user_id, data in levels_data[guild_id].items():
-            if data["level"] >= 3:
+            if data["level"] >= 5:
                 member = ctx.guild.get_member(int(user_id))
                 if member and role not in member.roles:
                     await member.add_roles(role)
