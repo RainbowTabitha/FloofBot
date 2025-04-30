@@ -63,13 +63,13 @@ class Leveling(commands.Cog):
 
             await message.channel.send(embed=embed)
 
-            # Check if the user reached level 5 and assign the role
-            if levels_data[guild_id][user_id]["level"] >= 5:
+            # Check if the user reached level 3 and assign the role
+            if levels_data[guild_id][user_id]["level"] >= 3:
                 role_name = "Verified Furry"
                 role = discord.utils.get(message.guild.roles, name=role_name)
                 if role:
                     await message.author.add_roles(role)
-                    await message.channel.send(f"{message.author.mention}, you have been given the role **{role_name}** for reaching level 5!")
+                    await message.channel.send(f"{message.author.mention}, you have been given the role **{role_name}** for reaching level 3!")
 
         # Save levels data after each message
         save_levels()
@@ -134,13 +134,12 @@ class Leveling(commands.Cog):
             return embed
  
         # Send the initial message with the leaderboard
-        await ctx.respond("Here is the leaderboard:")
-        message = await ctx.send(embed=await send_leaderboard_page(current_page))
+        message = await ctx.respond("Here is the leaderboard:", embed=await send_leaderboard_page(current_page))
 
         # Add reactions for pagination
         if total_pages > 1:
-          await message.add_reaction("◀️")  # Previous page
-          await message.add_reaction("▶️")  # Next page
+            await message.add_reaction("◀️")  # Previous page
+            await message.add_reaction("▶️")  # Next page
 
         # Reaction handling
         async def check(reaction, user):
@@ -151,16 +150,40 @@ class Leveling(commands.Cog):
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
                 if str(reaction.emoji) == "◀️" and current_page > 0:
                     current_page -= 1
-                    await message.delete()  # Delete the old message
-                    message = await ctx.send(embed=await send_leaderboard_page(current_page))
+                    await message.edit(embed=await send_leaderboard_page(current_page))
                 elif str(reaction.emoji) == "▶️" and current_page < total_pages - 1:
                     current_page += 1
-                    await message.delete()  # Delete the old message
-                    message = await ctx.send(embed=await send_leaderboard_page(current_page))
+                    await message.edit(embed=await send_leaderboard_page(current_page))
 
                 # Remove the user's reaction
                 await message.remove_reaction(reaction, user)
 
             except Exception as e:
                 print(f"Error during reaction handling: {e}")
-                break  # Exi
+                break  # Exit the loop on timeout or error
+
+    @commands.slash_command()
+    @commands.has_role("STAFF")
+    async def retroactive_roles(self, ctx: discord.ApplicationContext):
+        """Retroactively assign roles to users who are level 3 or higher."""
+        guild_id = str(ctx.guild.id)
+        role_name = "Verified Furry"
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
+        
+        if not role:
+            await ctx.respond(f"Error: The role '{role_name}' does not exist.")
+            return
+            
+        if guild_id not in levels_data:
+            await ctx.respond("No level data exists for this server.")
+            return
+            
+        assigned_count = 0
+        for user_id, data in levels_data[guild_id].items():
+            if data["level"] >= 3:
+                member = ctx.guild.get_member(int(user_id))
+                if member and role not in member.roles:
+                    await member.add_roles(role)
+                    assigned_count += 1
+                    
+        await ctx.respond(f"Successfully assigned the {role_name} role to {assigned_count} members who are level 3 or higher.")
