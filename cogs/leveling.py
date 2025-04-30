@@ -141,6 +141,7 @@ class Leveling(commands.Cog):
  
         # Send the initial message with the leaderboard
         message = await ctx.respond("Here is the leaderboard:", embed=await send_leaderboard_page(current_page))
+        message = await message.original_message()
 
         # Add reactions for pagination
         if total_pages > 1:
@@ -149,7 +150,7 @@ class Leveling(commands.Cog):
 
         # Reaction handling
         async def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"] and reaction.message.id == message.id
 
         while True:
             try:
