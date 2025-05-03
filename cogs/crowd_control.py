@@ -298,6 +298,3 @@ class CrowdControl(commands.Cog):
     async def on_ready(self):
         # Register persistent views
         self.bot.add_view(ApplicationModerationView(0))  # Dummy ID for persistent view
-
-async def setup(bot):
-    await bot.add_cog(CrowdControl(bot)) 
