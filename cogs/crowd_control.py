@@ -46,10 +46,7 @@ class ApplicationModalPart1(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         print("Part 1 submitted, preparing part 2...")
-        # Store part 1 responses
         responses = [child.value for child in self.children]
-        
-        # Create and send part 2 modal
         modal = ApplicationModalPart2(responses)
         try:
             await interaction.response.send_modal(modal)
