@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import json
 from datetime import datetime
-from discord import TextStyle
+from discord.enums import TextStyle
 
 # Configuration
 APPLICATION_CHANNEL_ID = 1361715508805898482
