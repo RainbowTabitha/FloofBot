@@ -3,12 +3,10 @@
 #***************************************************************************#
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import json
 import os
 from datetime import datetime
-import pytz
-import asyncio
 import requests
 import io
 

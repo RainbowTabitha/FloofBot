@@ -3,7 +3,6 @@ from discord.ext import commands, tasks
 import json
 import os
 from datetime import datetime
-import pytz
 import asyncio
 
 # File to store birthday data
