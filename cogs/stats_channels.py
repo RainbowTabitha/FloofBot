@@ -2,10 +2,9 @@ import discord
 from discord.ext import commands, tasks
 import asyncio
 
-# Configuration: Replace these with your actual channel IDs
-MEMBER_COUNT_CHANNEL_ID = 1361718381069205752  # Replace with your member count channel ID
-BOT_COUNT_CHANNEL_ID = 1361717535938052176     # Replace with your bot count channel ID
-BOOSTS_COUNT_CHANNEL_ID = 1361718731495178431  # Replace with your boosts count channel ID
+MEMBER_COUNT_CHANNEL_ID = 1361718381069205752
+BOT_COUNT_CHANNEL_ID = 1361717535938052176 
+BOOSTS_COUNT_CHANNEL_ID = 1361718731495178431
 
 class StatsChannels(commands.Cog):
     def __init__(self, bot):
