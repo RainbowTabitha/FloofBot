@@ -16,31 +16,31 @@ class ApplicationModalPart1(discord.ui.Modal):
         self.add_item(discord.ui.InputText(
             label="How did you join the server?",
             placeholder="Who invited you? If you joined via Disboard, say Disboard.",
-            style=6,  # paragraph
+            style=discord.TextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Tell us about yourself",
             placeholder="Please tell us a bit about yourself and why you want to join.",
-            style=6,  # paragraph
+            style=discord.TextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Explain the furry fandom",
             placeholder="Explain the furry fandom in your own words.",
-            style=6,  # paragraph
+            style=discord.TextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Rules Agreement",
             placeholder="Did you read the rules thoroughly and agree to them?",
-            style=4,  # short
+            style=discord.TextStyle.short,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Describe two rules",
             placeholder="Describe two rules in your own words.",
-            style=6,  # paragraph
+            style=discord.TextStyle.long,
             required=True
         ))
 
@@ -63,13 +63,13 @@ class ApplicationModalPart2(discord.ui.Modal):
         self.add_item(discord.ui.InputText(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
-            style=4,  # short
+            style=discord.TextStyle.short,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Password",
             placeholder="What is the password found in the guidelines?",
-            style=4,  # short
+            style=discord.TextStyle.short,
             required=True
         ))
 
