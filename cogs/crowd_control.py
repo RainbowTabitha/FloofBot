@@ -5,20 +5,14 @@ from datetime import datetime
 import os
 
 # Configuration
-APPLICATION_CHANNEL_ID = 1361715508805898482  # Channel where applications are posted
-APPLICATION_LOG_CHANNEL_ID = 1361727966861590749  # Channel for logging application actions
-STAFF_ROLE_ID = 1355278431193137395  # Role that can moderate applications
-FURRY_ROLE_ID = 1349842541616562197  # Role to give when approved
+APPLICATION_CHANNEL_ID = 1361715508805898482
+APPLICATION_LOG_CHANNEL_ID = 1361727966861590749
+STAFF_ROLE_ID = 1355278431193137395
+FURRY_ROLE_ID = 1349842541616562197
 
-class ApplicationModalPart1(discord.ui.Modal):
+class ApplicationModal(discord.ui.Modal):
     def __init__(self):
-        super().__init__(title="Fluffy Bakery Application - Part 1")
-        self.add_item(discord.ui.InputText(
-            label="How did you join the server?",
-            placeholder="Who invited you? If you joined via Disboard, say Disboard.",
-            style=discord.InputTextStyle.long,
-            required=True
-        ))
+        super().__init__(title="Fluffy Bakery Application")
         self.add_item(discord.ui.InputText(
             label="Tell us about yourself",
             placeholder="Please tell us a bit about yourself and why you want to join.",
@@ -32,33 +26,11 @@ class ApplicationModalPart1(discord.ui.Modal):
             required=True
         ))
         self.add_item(discord.ui.InputText(
-            label="Rules Agreement",
-            placeholder="Did you read the rules thoroughly and agree to them?",
-            style=discord.InputTextStyle.short,
-            required=True
-        ))
-        self.add_item(discord.ui.InputText(
             label="Describe two rules",
             placeholder="Describe two rules in your own words.",
             style=discord.InputTextStyle.long,
             required=True
         ))
-
-    async def on_submit(self, interaction: discord.Interaction):
-        print("Part 1 submitted, preparing part 2...")
-        responses = [child.value for child in self.children]
-        modal = ApplicationModalPart2(responses)
-        try:
-            await interaction.response.send_modal(modal)
-            print("Part 2 modal sent successfully")
-        except Exception as e:
-            print(f"Error sending part 2 modal: {str(e)}")
-            await interaction.response.send_message("There was an error processing your application. Please try again.", ephemeral=True)
-
-class ApplicationModalPart2(discord.ui.Modal):
-    def __init__(self, part1_responses):
-        super().__init__(title="Fluffy Bakery Application - Part 2")
-        self.part1_responses = part1_responses
         self.add_item(discord.ui.InputText(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
@@ -73,59 +45,41 @@ class ApplicationModalPart2(discord.ui.Modal):
         ))
 
     async def on_submit(self, interaction: discord.Interaction):
-        print("Part 2 submitted, processing application...")
-        try:
-            # Get the cog instance
-            cog = interaction.client.get_cog("CrowdControl")
-            if not cog:
-                await interaction.response.send_message("Error: CrowdControl cog not found!", ephemeral=True)
-                return
+        cog = interaction.client.get_cog("CrowdControl")
+        if not cog:
+            await interaction.response.send_message("Error: CrowdControl cog not found!", ephemeral=True)
+            return
 
-            # Combine all responses
-            all_responses = self.part1_responses + [child.value for child in self.children]
+        embed = discord.Embed(
+            title="New Application",
+            description=f"Application from {interaction.user.mention}",
+            color=discord.Color.blue(),
+            timestamp=datetime.now()
+        )
+        embed.set_author(name=str(interaction.user), icon_url=interaction.user.display_avatar.url)
 
-            # Create application embed
-            embed = discord.Embed(
-                title="New Application",
-                description=f"Application from {interaction.user.mention}",
-                color=discord.Color.blue(),
-                timestamp=datetime.now()
-            )
-            embed.set_author(name=str(interaction.user), icon_url=interaction.user.display_avatar.url)
-            
-            # Add fields for each question
-            questions = [
-                "How did you join the server?",
-                "Tell us about yourself",
-                "Explain the furry fandom",
-                "Rules Agreement",
-                "Describe two rules",
-                "Discrimination Promise",
-                "Password"
-            ]
-            
-            for question, response in zip(questions, all_responses):
-                embed.add_field(name=question, value=response, inline=False)
+        questions = [
+            "Tell us about yourself",
+            "Explain the furry fandom",
+            "Describe two rules",
+            "Discrimination Promise",
+            "Password"
+        ]
+        for label, value in zip(questions, [child.value for child in self.children]):
+            embed.add_field(name=label, value=value, inline=False)
 
-            # Create view with moderation buttons
-            view = ApplicationModerationView(interaction.user.id)
+        view = ApplicationModerationView(interaction.user.id)
+        channel = interaction.guild.get_channel(APPLICATION_CHANNEL_ID)
+        if channel:
+            message = await channel.send(embed=embed, view=view)
+            cog.applications[str(interaction.user.id)] = {
+                "message_id": message.id,
+                "status": "pending",
+                "timestamp": datetime.now().isoformat()
+            }
+            cog.save_applications()
 
-            # Send to application channel
-            channel = interaction.guild.get_channel(APPLICATION_CHANNEL_ID)
-            if channel:
-                message = await channel.send(embed=embed, view=view)
-                cog.applications[str(interaction.user.id)] = {
-                    "message_id": message.id,
-                    "status": "pending",
-                    "timestamp": datetime.now().isoformat()
-                }
-                cog.save_applications()
-                print("Application processed and saved successfully")
-
-            await interaction.response.send_message("Your application has been submitted!", ephemeral=True)
-        except Exception as e:
-            print(f"Error processing application part 2: {str(e)}")
-            await interaction.response.send_message("There was an error processing your application. Please try again.", ephemeral=True)
+        await interaction.response.send_message("Your application has been submitted!", ephemeral=True)
 
 class ApplicationModerationView(discord.ui.View):
     def __init__(self, applicant_id: int):
@@ -400,7 +354,7 @@ class CrowdControl(commands.Cog):
     @commands.slash_command()
     async def apply(self, ctx):
         """Start the application process"""
-        modal = ApplicationModalPart1()
+        modal = ApplicationModal()
         await ctx.send_modal(modal)
 
 class ApplyButton(discord.ui.Button):
@@ -412,11 +366,5 @@ class ApplyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        print("Apply button clicked, sending part 1 modal...")
-        modal = ApplicationModalPart1()
-        try:
-            await interaction.response.send_modal(modal)
-            print("Part 1 modal sent successfully")
-        except Exception as e:
-            print(f"Error sending part 1 modal: {str(e)}")
-            await interaction.response.send_message("There was an error starting your application. Please try again.", ephemeral=True)
+        modal = ApplicationModal()
+        await interaction.response.send_modal(modal)
