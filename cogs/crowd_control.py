@@ -9,9 +9,9 @@ APPLICATION_CHANNEL_ID = 1361715508805898482  # Channel where applications are p
 APPLICATION_LOG_CHANNEL_ID = 1361727966861590749  # Channel for logging application actions
 STAFF_ROLE_ID = 1355278431193137395  # Role that can moderate applications
 
-class ApplicationModal(discord.ui.Modal, title="FloofBot Application"):
+class ApplicationModal(discord.ui.Modal):
     def __init__(self):
-        super().__init__()
+        super().__init__(title="FloofBot Application")
         self.add_item(discord.ui.TextInput(
             label="How did you join the server?",
             placeholder="Who invited you? If you joined via Disboard, say Disboard.",
