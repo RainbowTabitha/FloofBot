@@ -76,7 +76,7 @@ class ApplicationModal(discord.ui.Modal):
         view = ApplicationModerationView(interaction.user.id)
 
         # Send to application channel
-        channel = interaction.guild.get_channel(APPLICATION_CHANNEL_ID)
+        channel = interaction.guild.get_channel(APPLICATION_LOG_CHANNEL_ID)
         if channel:
             message = await channel.send(embed=embed, view=view)
             cog.applications[str(interaction.user.id)] = {
@@ -275,6 +275,7 @@ class CrowdControl(commands.Cog):
         self.bot = bot
         self.applications = {}
         self.load_applications()
+        self.setup_done = False
 
     def load_applications(self):
         try:
@@ -288,13 +289,79 @@ class CrowdControl(commands.Cog):
         with open('applications.json', 'w') as f:
             json.dump(self.applications, f, indent=4)
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when the bot is ready"""
+        if not self.setup_done:
+            print("Bot is ready, setting up crowd control system...")
+            await self.setup_application_channel()
+            self.setup_done = True
+
+    async def setup_application_channel(self):
+        """Set up the application embed in the application channel"""
+        print(f"Attempting to setup application channel with ID: {APPLICATION_CHANNEL_ID}")
+        channel = self.bot.get_channel(APPLICATION_CHANNEL_ID)
+        if not channel:
+            print(f"Application channel not found! ID: {APPLICATION_CHANNEL_ID}")
+            return
+        print(f"Found application channel: {channel.name}")
+
+        # Delete any existing messages in the channel
+        try:
+            messages = [message async for message in channel.history(limit=None)]
+            if messages:  # Only try to delete if there are messages
+                print(f"Found {len(messages)} messages to clear")
+                await channel.purge(limit=None)
+                print(f"Cleared {len(messages)} messages from application channel")
+            else:
+                print("No messages to clear in application channel")
+        except discord.Forbidden:
+            print("No permission to delete messages in application channel!")
+            return
+        except Exception as e:
+            print(f"Error clearing messages: {e}")
+            # Continue anyway, we'll try to post the embed
+
+        # Create and send the application embed
+        try:
+            print("Creating application embed...")
+            embed = discord.Embed(
+                title="🎫 Server Application",
+                description="Want to join our server? Click the button below to start your application!",
+                color=discord.Color.blue()
+            )
+            embed.add_field(
+                name="How it works",
+                value="1. Click the 'Apply' button\n2. Fill out the application form\n3. Wait for staff to review your application\n4. You'll be notified of the decision!",
+                inline=False
+            )
+            embed.set_footer(text="We'll review your application as soon as possible!")
+
+            view = discord.ui.View()
+            view.add_item(ApplyButton())
+
+            print("Sending application embed...")
+            await channel.send(embed=embed, view=view)
+            print("Application embed posted successfully!")
+        except Exception as e:
+            print(f"Error posting application embed: {e}")
+            print(f"Error type: {type(e)}")
+            print(f"Error details: {str(e)}")
+
     @commands.slash_command()
     async def apply(self, ctx):
         """Start the application process"""
         modal = ApplicationModal()
         await ctx.send_modal(modal)
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        # Register persistent views
-        self.bot.add_view(ApplicationModerationView(0))  # Dummy ID for persistent view
+class ApplyButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(
+            label="Apply",
+            style=discord.ButtonStyle.green,
+            emoji="📝"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        modal = ApplicationModal()
+        await interaction.response.send_modal(modal)
