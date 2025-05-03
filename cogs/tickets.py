@@ -127,8 +127,9 @@ class Tickets(commands.Cog):
         # Create logs directory if it doesn't exist
         os.makedirs(TICKET_LOGS_DIR, exist_ok=True)
 
-    async def cog_load(self):
+    async def setup_hook(self):
         """Called when the cog is loaded"""
+        print("Setting up ticket system...")
         await self.cleanup_stale_tickets()
         await self.setup_ticket_channel()
 
@@ -168,7 +169,7 @@ class Tickets(commands.Cog):
         """Set up the ticket creation embed in the ticket channel"""
         channel = self.bot.get_channel(TICKET_CHANNEL_ID)
         if not channel:
-            print("Ticket channel not found!")
+            print(f"Ticket channel not found! ID: {TICKET_CHANNEL_ID}")
             return
 
         # Delete any existing messages in the channel
@@ -196,6 +197,7 @@ class Tickets(commands.Cog):
         view.add_item(TicketButton())
 
         await channel.send(embed=embed, view=view)
+        print("Ticket creation embed posted successfully!")
 
     @commands.command()
     @commands.has_role("STAFF")
