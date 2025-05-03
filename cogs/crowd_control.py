@@ -8,45 +8,46 @@ import os
 APPLICATION_CHANNEL_ID = 1361715508805898482  # Channel where applications are posted
 APPLICATION_LOG_CHANNEL_ID = 1361727966861590749  # Channel for logging application actions
 STAFF_ROLE_ID = 1355278431193137395  # Role that can moderate applications
+FURRY_ROLE_ID = 1349842541616562197  # Role to give when approved
 
 class ApplicationModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="FloofBot Application")
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="How did you join the server?",
             placeholder="Who invited you? If you joined via Disboard, say Disboard.",
-            style=discord.TextStyle.paragraph,
+            style=discord.InputTextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Tell us about yourself",
             placeholder="Please tell us a bit about yourself and why you want to join.",
-            style=discord.TextStyle.paragraph,
+            style=discord.InputTextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Explain the furry fandom",
             placeholder="Explain the furry fandom in your own words.",
-            style=discord.TextStyle.paragraph,
+            style=discord.InputTextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Rules Agreement",
             placeholder="Did you read the rules thoroughly and agree to them?",
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Describe two rules",
             placeholder="Describe two rules in your own words.",
-            style=discord.TextStyle.paragraph,
+            style=discord.InputTextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
             required=True
         ))
-        self.add_item(discord.ui.TextInput(
+        self.add_item(discord.ui.InputText(
             label="Password",
             placeholder="What is the password found in the guidelines?",
             required=True
@@ -148,8 +149,18 @@ class ApplicationModerationView(discord.ui.View):
 
         # Perform action
         if action == "accepted":
-            # Add member role or whatever you want to do for accepted applicants
-            pass
+            # Add Furry role to accepted applicant
+            furry_role = interaction.guild.get_role(FURRY_ROLE_ID)
+            if furry_role:
+                try:
+                    await applicant.add_roles(furry_role)
+                    print(f"Added Furry role to {applicant.name}")
+                except discord.Forbidden:
+                    print(f"Could not add Furry role to {applicant.name} - missing permissions")
+                except Exception as e:
+                    print(f"Error adding Furry role: {e}")
+            else:
+                print(f"Furry role not found! ID: {FURRY_ROLE_ID}")
         elif action == "kicked":
             # Create kick embeds
             server_embed = discord.Embed(
@@ -262,10 +273,10 @@ class ApplicationModerationView(discord.ui.View):
 class ReasonModal(discord.ui.Modal):
     def __init__(self, action: str):
         super().__init__(title=f"Reason for {action.capitalize()}")
-        self.reason = discord.ui.TextInput(
+        self.reason = discord.ui.InputText(
             label=f"Reason for {action.capitalize()}",
             placeholder="Enter the reason...",
-            style=discord.TextStyle.paragraph,
+            style=discord.InputTextStyle.paragraph,
             required=True
         )
         self.add_item(self.reason)
