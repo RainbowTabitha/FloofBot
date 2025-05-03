@@ -107,7 +107,8 @@ class DeleteTicketButton(discord.ui.Button):
         super().__init__(
             label="Begone, Mods",
             style=discord.ButtonStyle.red,
-            emoji="❌"
+            emoji="❌",
+            custom_id="delete_ticket_button"
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -125,6 +126,11 @@ class DeleteTicketButton(discord.ui.Button):
         # Close the ticket
         await cog.close(ctx)
 
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(DeleteTicketButton())
+
 class Tickets(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -141,6 +147,7 @@ class Tickets(commands.Cog):
         """Called when the bot is ready"""
         if not self.setup_done:
             print("Bot is ready, setting up ticket system...")
+            self.bot.add_view(TicketView())
             await self.cleanup_stale_tickets()
             await self.setup_ticket_channel()
             self.setup_done = True
@@ -192,11 +199,11 @@ class Tickets(commands.Cog):
             if messages:  # Only try to delete if there are messages
                 print(f"Found {len(messages)} messages to clear")
                 await channel.purge(limit=None)
-                print(f"Cleared {len(messages)} messages from ticket channel")
+                print(f"Cleared {len(messages)} messages from application channel")
             else:
-                print("No messages to clear in ticket channel")
+                print("No messages to clear in application channel")
         except discord.Forbidden:
-            print("No permission to delete messages in ticket channel!")
+            print("No permission to delete messages in application channel!")
             return
         except Exception as e:
             print(f"Error clearing messages: {e}")
@@ -217,14 +224,14 @@ class Tickets(commands.Cog):
             )
             embed.set_footer(text="We'll get back to you as soon as we can!")
 
-            view = discord.ui.View()
+            view = discord.ui.View(timeout=None)
             view.add_item(TicketButton())
 
             print("Sending ticket creation embed...")
             await channel.send(embed=embed, view=view)
             print("Ticket creation embed posted successfully!")
         except Exception as e:
-            print(f"Error posting ticket creation embed: {e}")
+            print(f"Error posting ticket embed: {e}")
             print(f"Error type: {type(e)}")
             print(f"Error details: {str(e)}")
 
