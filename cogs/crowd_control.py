@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import json
 from datetime import datetime
-from discord.enums import TextStyle
 
 # Configuration
 APPLICATION_CHANNEL_ID = 1361715508805898482
@@ -16,31 +15,31 @@ class ApplicationModal(discord.ui.Modal):
         self.add_item(discord.ui.InputText(
             label="Tell us about yourself",
             placeholder="Please tell us a bit about yourself and why you want to join.",
-            style=TextStyle.long,
+            style=discord.InputTextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Explain the furry fandom",
             placeholder="Explain the furry fandom in your own words.",
-            style=TextStyle.long,
+            style=discord.InputTextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Describe two rules",
             placeholder="Describe two rules in your own words.",
-            style=TextStyle.long,
+            style=discord.InputTextStyle.long,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
-            style=TextStyle.short,
+            style=discord.InputTextStyle.short,
             required=True
         ))
         self.add_item(discord.ui.InputText(
             label="Password",
             placeholder="What is the password found in the guidelines?",
-            style=TextStyle.short,
+            style=discord.InputTextStyle.short,
             required=True
         ))
 
@@ -159,7 +158,7 @@ class ReasonModal(discord.ui.Modal):
         super().__init__(title=f"Reason for {action.capitalize()}")
         self.reason = discord.ui.InputText(
             label=f"Reason for {action.capitalize()}",
-            style=TextStyle.short,
+            style=discord.InputTextStyle.short,
             required=True
         )
         self.add_item(self.reason)
