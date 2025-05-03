@@ -13,6 +13,7 @@ TICKET_LOGS_DIR = "staff-logs/tickets"
 STAFF_ROLE_ID = 1355278431193137395
 TICKET_LOG_CHANNEL = 1361718840488104157
 TICKET_CHANNEL_ID = 1361717310166929640
+STAFF_NOTIFICATION_CHANNEL = 1361694388346163360
 
 class TicketButton(discord.ui.Button):
     def __init__(self):
@@ -94,6 +95,12 @@ class TicketButton(discord.ui.Button):
 
         await ticket_channel.send(embed=embed, view=view)
         await interaction.response.send_message(f"Ticket created! {ticket_channel.mention}", ephemeral=True)
+
+        # Ping staff in notification channel
+        notification_channel = interaction.guild.get_channel(STAFF_NOTIFICATION_CHANNEL)
+        if notification_channel:
+            staff_ping = f"{staff_role.mention} New ticket created by {interaction.user.mention} in {ticket_channel.mention}"
+            await notification_channel.send(staff_ping)
 
 class DeleteTicketButton(discord.ui.Button):
     def __init__(self):
