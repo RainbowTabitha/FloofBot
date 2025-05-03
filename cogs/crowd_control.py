@@ -12,34 +12,34 @@ FURRY_ROLE_ID = 1349842541616562197
 class ApplicationModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title="Fluffy Bakery Application")
-        self.add_item(discord.ui.InputText(
+        self.add_item(discord.ui.TextInput(
             label="Tell us about yourself",
             placeholder="Please tell us a bit about yourself and why you want to join.",
-            style=discord.InputTextStyle.long,
+            style=discord.TextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.InputText(
+        self.add_item(discord.ui.TextInput(
             label="Explain the furry fandom",
             placeholder="Explain the furry fandom in your own words.",
-            style=discord.InputTextStyle.long,
+            style=discord.TextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.InputText(
+        self.add_item(discord.ui.TextInput(
             label="Describe two rules",
             placeholder="Describe two rules in your own words.",
-            style=discord.InputTextStyle.long,
+            style=discord.TextStyle.paragraph,
             required=True
         ))
-        self.add_item(discord.ui.InputText(
+        self.add_item(discord.ui.TextInput(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
-            style=discord.InputTextStyle.short,
+            style=discord.TextStyle.short,
             required=True
         ))
-        self.add_item(discord.ui.InputText(
+        self.add_item(discord.ui.TextInput(
             label="Password",
             placeholder="What is the password found in the guidelines?",
-            style=discord.InputTextStyle.short,
+            style=discord.TextStyle.short,
             required=True
         ))
 
@@ -58,8 +58,8 @@ class ApplicationModal(discord.ui.Modal):
         embed.set_author(name=str(interaction.user), icon_url=interaction.user.display_avatar.url)
 
         # Add responses to embed
-        for item in self.children:
-            embed.add_field(name=item.label, value=item.value, inline=False)
+        for child in self.children:
+            embed.add_field(name=child.label, value=child.value, inline=False)
 
         # Create view with moderation buttons
         view = ApplicationModerationView(interaction.user.id)
@@ -156,9 +156,9 @@ class ApplicationModerationView(discord.ui.View):
 class ReasonModal(discord.ui.Modal):
     def __init__(self, action: str):
         super().__init__(title=f"Reason for {action.capitalize()}")
-        self.reason = discord.ui.InputText(
+        self.reason = discord.ui.TextInput(
             label=f"Reason for {action.capitalize()}",
-            style=discord.InputTextStyle.short,
+            style=discord.TextStyle.short,
             required=True
         )
         self.add_item(self.reason)
@@ -190,4 +190,9 @@ class CrowdControl(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         """Register persistent views when the bot starts"""
+        # Use add_view with a custom ID pattern for persistent views
         self.bot.add_view(ApplicationModerationView(0))  # Dummy ID for persistent view
+        print("CrowdControl cog is ready!")
+
+def setup(bot):
+    bot.add_cog(CrowdControl(bot))
