@@ -259,9 +259,9 @@ class ApplicationModerationView(discord.ui.View):
             except discord.Forbidden:
                 pass
 
-class ReasonModal(discord.ui.Modal, title="Reason for Action"):
+class ReasonModal(discord.ui.Modal):
     def __init__(self, action: str):
-        super().__init__()
+        super().__init__(title=f"Reason for {action.capitalize()}")
         self.reason = discord.ui.TextInput(
             label=f"Reason for {action.capitalize()}",
             placeholder="Enter the reason...",
