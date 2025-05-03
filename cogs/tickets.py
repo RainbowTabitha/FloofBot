@@ -12,6 +12,7 @@ TICKET_CATEGORY_ID = 1367688975828914236
 TICKET_LOGS_DIR = "staff-logs/tickets"
 STAFF_ROLE_ID = 1355278431193137395
 TICKET_LOG_CHANNEL = 1361718840488104157
+TICKET_CHANNEL_ID = 1367688975828914236
 
 class TicketButton(discord.ui.Button):
     def __init__(self):
@@ -129,6 +130,7 @@ class Tickets(commands.Cog):
     async def cog_load(self):
         """Called when the cog is loaded"""
         await self.cleanup_stale_tickets()
+        await self.setup_ticket_channel()
 
     async def cleanup_stale_tickets(self):
         """Clean up any stale ticket data where channels no longer exist"""
@@ -162,10 +164,22 @@ class Tickets(commands.Cog):
         with open('tickets.json', 'w') as f:
             json.dump(self.ticket_data, f, indent=4)
 
-    @commands.slash_command()
-    @commands.has_role("STAFF")
-    async def setup_tickets(self, ctx):
-        """Set up the ticket creation embed"""
+    async def setup_ticket_channel(self):
+        """Set up the ticket creation embed in the ticket channel"""
+        channel = self.bot.get_channel(TICKET_CHANNEL_ID)
+        if not channel:
+            print("Ticket channel not found!")
+            return
+
+        # Delete any existing messages in the channel
+        try:
+            async for message in channel.history(limit=None):
+                await message.delete()
+        except discord.Forbidden:
+            print("No permission to delete messages in ticket channel!")
+            return
+
+        # Create and send the ticket creation embed
         embed = discord.Embed(
             title="🎫 Support Tickets",
             description="Is some fur is ruining your party? Need help with something?\nClick the button below to create a support ticket!",
@@ -181,7 +195,7 @@ class Tickets(commands.Cog):
         view = discord.ui.View()
         view.add_item(TicketButton())
 
-        await ctx.send(embed=embed, view=view)
+        await channel.send(embed=embed, view=view)
 
     @commands.command()
     @commands.has_role("STAFF")
