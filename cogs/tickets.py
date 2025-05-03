@@ -174,30 +174,38 @@ class Tickets(commands.Cog):
 
         # Delete any existing messages in the channel
         try:
-            async for message in channel.history(limit=None):
-                await message.delete()
+            messages = [message async for message in channel.history(limit=None)]
+            if messages:  # Only try to delete if there are messages
+                await channel.purge(limit=None)
+                print(f"Cleared {len(messages)} messages from ticket channel")
         except discord.Forbidden:
             print("No permission to delete messages in ticket channel!")
             return
+        except Exception as e:
+            print(f"Error clearing messages: {e}")
+            # Continue anyway, we'll try to post the embed
 
         # Create and send the ticket creation embed
-        embed = discord.Embed(
-            title="🎫 Support Tickets",
-            description="Is some fur is ruining your party? Need help with something?\nClick the button below to create a support ticket!",
-            color=discord.Color.blue()
-        )
-        embed.add_field(
-            name="How it works",
-            value="1. Click the 'Create Ticket' button\n2. A private channel will be created for you and staff\n3. Describe your issue in the channel\n4. Staff will assist you as soon as possible!",
-            inline=False
-        )
-        embed.set_footer(text="We'll get back to you as soon as we can!")
+        try:
+            embed = discord.Embed(
+                title="🎫 Support Tickets",
+                description="Is some fur is ruining your party? Need help with something?\nClick the button below to create a support ticket!",
+                color=discord.Color.blue()
+            )
+            embed.add_field(
+                name="How it works",
+                value="1. Click the 'Create Ticket' button\n2. A private channel will be created for you and staff\n3. Describe your issue in the channel\n4. Staff will assist you as soon as possible!",
+                inline=False
+            )
+            embed.set_footer(text="We'll get back to you as soon as we can!")
 
-        view = discord.ui.View()
-        view.add_item(TicketButton())
+            view = discord.ui.View()
+            view.add_item(TicketButton())
 
-        await channel.send(embed=embed, view=view)
-        print("Ticket creation embed posted successfully!")
+            await channel.send(embed=embed, view=view)
+            print("Ticket creation embed posted successfully!")
+        except Exception as e:
+            print(f"Error posting ticket creation embed: {e}")
 
     @commands.command()
     @commands.has_role("STAFF")
