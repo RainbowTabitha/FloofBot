@@ -123,15 +123,20 @@ class Tickets(commands.Cog):
         self.bot = bot
         self.ticket_data = {}
         self.load_ticket_data()
+        self.setup_done = False
         
         # Create logs directory if it doesn't exist
         os.makedirs(TICKET_LOGS_DIR, exist_ok=True)
+        print("Tickets cog initialized!")
 
-    async def setup_hook(self):
-        """Called when the cog is loaded"""
-        print("Setting up ticket system...")
-        await self.cleanup_stale_tickets()
-        await self.setup_ticket_channel()
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when the bot is ready"""
+        if not self.setup_done:
+            print("Bot is ready, setting up ticket system...")
+            await self.cleanup_stale_tickets()
+            await self.setup_ticket_channel()
+            self.setup_done = True
 
     async def cleanup_stale_tickets(self):
         """Clean up any stale ticket data where channels no longer exist"""
@@ -167,17 +172,22 @@ class Tickets(commands.Cog):
 
     async def setup_ticket_channel(self):
         """Set up the ticket creation embed in the ticket channel"""
+        print(f"Attempting to setup ticket channel with ID: {TICKET_CHANNEL_ID}")
         channel = self.bot.get_channel(TICKET_CHANNEL_ID)
         if not channel:
             print(f"Ticket channel not found! ID: {TICKET_CHANNEL_ID}")
             return
+        print(f"Found ticket channel: {channel.name}")
 
         # Delete any existing messages in the channel
         try:
             messages = [message async for message in channel.history(limit=None)]
             if messages:  # Only try to delete if there are messages
+                print(f"Found {len(messages)} messages to clear")
                 await channel.purge(limit=None)
                 print(f"Cleared {len(messages)} messages from ticket channel")
+            else:
+                print("No messages to clear in ticket channel")
         except discord.Forbidden:
             print("No permission to delete messages in ticket channel!")
             return
@@ -187,6 +197,7 @@ class Tickets(commands.Cog):
 
         # Create and send the ticket creation embed
         try:
+            print("Creating ticket creation embed...")
             embed = discord.Embed(
                 title="🎫 Support Tickets",
                 description="Is some fur is ruining your party? Need help with something?\nClick the button below to create a support ticket!",
@@ -202,10 +213,13 @@ class Tickets(commands.Cog):
             view = discord.ui.View()
             view.add_item(TicketButton())
 
+            print("Sending ticket creation embed...")
             await channel.send(embed=embed, view=view)
             print("Ticket creation embed posted successfully!")
         except Exception as e:
             print(f"Error posting ticket creation embed: {e}")
+            print(f"Error type: {type(e)}")
+            print(f"Error details: {str(e)}")
 
     @commands.command()
     @commands.has_role("STAFF")
