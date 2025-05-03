@@ -142,33 +142,33 @@ class Tickets(commands.Cog):
 
         await ctx.send(embed=embed, view=view)
 
-    @commands.slash_command()
+    @commands.command()
     @commands.has_role("STAFF")
-    async def close(self, interaction: discord.Interaction):
+    async def close(self, ctx):
         """Close the current ticket"""
         # Find the ticket
         ticket = None
         for user_id, data in self.ticket_data.items():
-            if data["channel_id"] == interaction.channel.id and data["open"]:
+            if data["channel_id"] == ctx.channel.id and data["open"]:
                 ticket = data
                 ticket_user_id = user_id
                 break
 
         if not ticket:
-            await interaction.response.send_message("This is not a valid ticket channel!", ephemeral=True)
+            await ctx.send("This is not a valid ticket channel!")
             return
 
         # Create transcript
-        await self.create_transcript(interaction.channel, ticket_user_id, ticket["reason"])
+        await self.create_transcript(ctx.channel, ticket_user_id, ticket["reason"])
 
         # Close the ticket
         self.ticket_data[ticket_user_id]["open"] = False
         self.save_ticket_data()
 
         # Send closing message
-        await interaction.response.send_message("Ticket closed! Creating transcript...")
+        await ctx.send("Ticket closed! Creating transcript...")
         await asyncio.sleep(2)
-        await interaction.channel.delete()
+        await ctx.channel.delete()
 
     async def create_transcript(self, channel, user_id, reason):
         # Get all messages
