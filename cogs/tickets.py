@@ -11,6 +11,7 @@ import re
 TICKET_CATEGORY_ID = 1367688975828914236
 TICKET_LOGS_DIR = "staff-logs/tickets"
 STAFF_ROLE_ID = 1355278431193137395
+TICKET_LOG_CHANNEL = 1361718840488104157
 
 class TicketButton(discord.ui.Button):
     def __init__(self):
@@ -125,6 +126,30 @@ class Tickets(commands.Cog):
         # Create logs directory if it doesn't exist
         os.makedirs(TICKET_LOGS_DIR, exist_ok=True)
 
+    async def cog_load(self):
+        """Called when the cog is loaded"""
+        await self.cleanup_stale_tickets()
+
+    async def cleanup_stale_tickets(self):
+        """Clean up any stale ticket data where channels no longer exist"""
+        stale_tickets = []
+        for user_id, data in self.ticket_data.items():
+            if data.get("open", False):
+                # Get the guild and channel
+                for guild in self.bot.guilds:
+                    channel = guild.get_channel(data["channel_id"])
+                    if not channel:
+                        stale_tickets.append(user_id)
+                        break
+
+        # Remove stale tickets
+        for user_id in stale_tickets:
+            del self.ticket_data[user_id]
+        
+        if stale_tickets:
+            self.save_ticket_data()
+            print(f"Cleaned up {len(stale_tickets)} stale tickets")
+
     def load_ticket_data(self):
         try:
             with open('tickets.json', 'r') as f:
@@ -194,12 +219,14 @@ class Tickets(commands.Cog):
         # Send closing message
         await send_message("Ticket closed! Creating transcript...")
 
-        # Send transcript to staff
-        with open(transcript_path, 'rb') as f:
-            await channel.send(
-                f"Transcript for ticket {channel.name}",
-                file=discord.File(f, filename=f"transcript_{channel.name}.html")
-            )
+        # Send transcript to log channel
+        log_channel = self.bot.get_channel(TICKET_LOG_CHANNEL)
+        if log_channel:
+            with open(transcript_path, 'rb') as f:
+                await log_channel.send(
+                    f"Transcript for ticket {channel.name}",
+                    file=discord.File(f, filename=f"transcript_{channel.name}.html")
+                )
 
         # Send transcript to user
         ticket_user = self.bot.get_user(int(ticket_user_id))
@@ -211,7 +238,7 @@ class Tickets(commands.Cog):
                         file=discord.File(f, filename=f"transcript_{channel.name}.html")
                     )
             except discord.Forbidden:
-                await channel.send("Could not DM transcript to user (DMs are closed).")
+                await log_channel.send(f"Could not DM transcript to user {ticket_user.mention} (DMs are closed).")
 
         await asyncio.sleep(2)
         await channel.delete()
