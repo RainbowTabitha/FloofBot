@@ -10,9 +10,9 @@ APPLICATION_LOG_CHANNEL_ID = 1361727966861590749  # Channel for logging applicat
 STAFF_ROLE_ID = 1355278431193137395  # Role that can moderate applications
 FURRY_ROLE_ID = 1349842541616562197  # Role to give when approved
 
-class ApplicationModal(discord.ui.Modal):
+class ApplicationModalPart1(discord.ui.Modal):
     def __init__(self):
-        super().__init__(title="FloofBot Application")
+        super().__init__(title="Fluffy Bakery Application - Part 1")
         self.add_item(discord.ui.InputText(
             label="How did you join the server?",
             placeholder="Who invited you? If you joined via Disboard, say Disboard.",
@@ -42,6 +42,19 @@ class ApplicationModal(discord.ui.Modal):
             style=discord.InputTextStyle.paragraph,
             required=True
         ))
+
+    async def callback(self, interaction: discord.Interaction):
+        # Store part 1 responses
+        responses = [item.value for item in self.children]
+        
+        # Send part 2 modal
+        modal = ApplicationModalPart2(responses)
+        await interaction.response.send_modal(modal)
+
+class ApplicationModalPart2(discord.ui.Modal):
+    def __init__(self, part1_responses):
+        super().__init__(title="Fluffy Bakery Application - Part 2")
+        self.part1_responses = part1_responses
         self.add_item(discord.ui.InputText(
             label="Discrimination Promise",
             placeholder="Do you promise not to discriminate against sex, ethnicity, religion, race, or self-identity?",
@@ -53,12 +66,15 @@ class ApplicationModal(discord.ui.Modal):
             required=True
         ))
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         # Get the cog instance
         cog = interaction.client.get_cog("CrowdControl")
         if not cog:
             await interaction.response.send_message("Error: CrowdControl cog not found!", ephemeral=True)
             return
+
+        # Combine all responses
+        all_responses = self.part1_responses + [item.value for item in self.children]
 
         # Create application embed
         embed = discord.Embed(
@@ -70,14 +86,24 @@ class ApplicationModal(discord.ui.Modal):
         embed.set_author(name=str(interaction.user), icon_url=interaction.user.display_avatar.url)
         
         # Add fields for each question
-        for child in self.children:
-            embed.add_field(name=child.label, value=child.value, inline=False)
+        questions = [
+            "How did you join the server?",
+            "Tell us about yourself",
+            "Explain the furry fandom",
+            "Rules Agreement",
+            "Describe two rules",
+            "Discrimination Promise",
+            "Password"
+        ]
+        
+        for question, response in zip(questions, all_responses):
+            embed.add_field(name=question, value=response, inline=False)
 
         # Create view with moderation buttons
         view = ApplicationModerationView(interaction.user.id)
 
         # Send to application channel
-        channel = interaction.guild.get_channel(APPLICATION_LOG_CHANNEL_ID)
+        channel = interaction.guild.get_channel(APPLICATION_CHANNEL_ID)
         if channel:
             message = await channel.send(embed=embed, view=view)
             cog.applications[str(interaction.user.id)] = {
@@ -362,7 +388,7 @@ class CrowdControl(commands.Cog):
     @commands.slash_command()
     async def apply(self, ctx):
         """Start the application process"""
-        modal = ApplicationModal()
+        modal = ApplicationModalPart1()
         await ctx.send_modal(modal)
 
 class ApplyButton(discord.ui.Button):
@@ -374,5 +400,5 @@ class ApplyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        modal = ApplicationModal()
+        modal = ApplicationModalPart1()
         await interaction.response.send_modal(modal)
