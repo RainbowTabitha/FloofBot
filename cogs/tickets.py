@@ -10,7 +10,7 @@ import re
 # Configuration
 TICKET_CATEGORY_ID = 1367688975828914236
 TICKET_LOGS_DIR = "staff-logs/tickets"
-TICKET_CHANNEL_ID = 1361717310166929640
+STAFF_ROLE_ID = 1355278431193137395
 
 class TicketButton(discord.ui.Button):
     def __init__(self):
@@ -38,12 +38,18 @@ class TicketButton(discord.ui.Button):
             await interaction.response.send_message("Ticket category not found!", ephemeral=True)
             return
 
+        # Get staff role
+        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
+        if not staff_role:
+            await interaction.response.send_message("Staff role not found!", ephemeral=True)
+            return
+
         # Create ticket channel
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             interaction.guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            interaction.guild.get_role("STAFF"): discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            staff_role: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
 
         ticket_channel = await interaction.guild.create_text_channel(
