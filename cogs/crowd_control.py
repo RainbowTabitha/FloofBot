@@ -44,7 +44,7 @@ class ApplicationModalPart1(discord.ui.Modal):
             required=True
         ))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
         # Store part 1 responses
         responses = [item.value for item in self.children]
         
@@ -69,7 +69,7 @@ class ApplicationModalPart2(discord.ui.Modal):
             required=True
         ))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
         # Get the cog instance
         cog = interaction.client.get_cog("CrowdControl")
         if not cog:
