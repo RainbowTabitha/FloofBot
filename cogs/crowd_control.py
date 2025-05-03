@@ -44,7 +44,8 @@ class ApplicationModalPart1(discord.ui.Modal):
             required=True
         ))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
+        print("Part 1 submitted, preparing part 2...")
         # Store part 1 responses
         responses = [child.value for child in self.children]
         
@@ -52,8 +53,9 @@ class ApplicationModalPart1(discord.ui.Modal):
         modal = ApplicationModalPart2(responses)
         try:
             await interaction.response.send_modal(modal)
+            print("Part 2 modal sent successfully")
         except Exception as e:
-            print(f"Error sending part 2 modal: {e}")
+            print(f"Error sending part 2 modal: {str(e)}")
             await interaction.response.send_message("There was an error processing your application. Please try again.", ephemeral=True)
 
 class ApplicationModalPart2(discord.ui.Modal):
@@ -73,7 +75,8 @@ class ApplicationModalPart2(discord.ui.Modal):
             required=True
         ))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
+        print("Part 2 submitted, processing application...")
         try:
             # Get the cog instance
             cog = interaction.client.get_cog("CrowdControl")
@@ -120,10 +123,11 @@ class ApplicationModalPart2(discord.ui.Modal):
                     "timestamp": datetime.now().isoformat()
                 }
                 cog.save_applications()
+                print("Application processed and saved successfully")
 
             await interaction.response.send_message("Your application has been submitted!", ephemeral=True)
         except Exception as e:
-            print(f"Error processing application part 2: {e}")
+            print(f"Error processing application part 2: {str(e)}")
             await interaction.response.send_message("There was an error processing your application. Please try again.", ephemeral=True)
 
 class ApplicationModerationView(discord.ui.View):
@@ -411,5 +415,11 @@ class ApplyButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        print("Apply button clicked, sending part 1 modal...")
         modal = ApplicationModalPart1()
-        await interaction.response.send_modal(modal)
+        try:
+            await interaction.response.send_modal(modal)
+            print("Part 1 modal sent successfully")
+        except Exception as e:
+            print(f"Error sending part 1 modal: {str(e)}")
+            await interaction.response.send_message("There was an error starting your application. Please try again.", ephemeral=True)
