@@ -28,9 +28,19 @@ class TicketButton(discord.ui.Button):
             return
 
         # Check if user already has an open ticket
-        if str(interaction.user.id) in cog.ticket_data and cog.ticket_data[str(interaction.user.id)]["open"]:
-            await interaction.response.send_message("You already have an open ticket!", ephemeral=True)
-            return
+        user_id = str(interaction.user.id)
+        if user_id in cog.ticket_data:
+            ticket = cog.ticket_data[user_id]
+            if ticket.get("open", False):
+                # Verify the channel still exists
+                channel = interaction.guild.get_channel(ticket["channel_id"])
+                if channel:
+                    await interaction.response.send_message("You already have an open ticket!", ephemeral=True)
+                    return
+                else:
+                    # Channel doesn't exist, clean up the data
+                    del cog.ticket_data[user_id]
+                    cog.save_ticket_data()
 
         # Create ticket channel
         category = interaction.guild.get_channel(TICKET_CATEGORY_ID)
@@ -59,7 +69,7 @@ class TicketButton(discord.ui.Button):
         )
 
         # Store ticket data
-        cog.ticket_data[str(interaction.user.id)] = {
+        cog.ticket_data[user_id] = {
             "channel_id": ticket_channel.id,
             "open": True,
             "created_at": datetime.now().isoformat(),
@@ -98,8 +108,13 @@ class DeleteTicketButton(discord.ui.Button):
             await interaction.response.send_message("Error: Tickets cog not found!", ephemeral=True)
             return
 
+        # Create a context from the interaction
+        ctx = await interaction.client.get_context(interaction.message)
+        ctx.author = interaction.user
+        ctx.channel = interaction.channel
+
         # Close the ticket
-        await cog.close(interaction)
+        await cog.close(ctx)
 
 class Tickets(commands.Cog):
     def __init__(self, bot):
@@ -114,8 +129,9 @@ class Tickets(commands.Cog):
         try:
             with open('tickets.json', 'r') as f:
                 self.ticket_data = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             self.ticket_data = {}
+            self.save_ticket_data()  # Create the file if it doesn't exist
 
     def save_ticket_data(self):
         with open('tickets.json', 'w') as f:
@@ -144,31 +160,61 @@ class Tickets(commands.Cog):
 
     @commands.command()
     @commands.has_role("STAFF")
-    async def close(self, ctx):
+    async def close(self, ctx_or_interaction):
         """Close the current ticket"""
+        # Handle both command and interaction contexts
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            channel = ctx_or_interaction.channel
+            user = ctx_or_interaction.user
+            send_message = ctx_or_interaction.response.send_message
+        else:
+            channel = ctx_or_interaction.channel
+            user = ctx_or_interaction.author
+            send_message = ctx_or_interaction.send
+
         # Find the ticket
         ticket = None
         for user_id, data in self.ticket_data.items():
-            if data["channel_id"] == ctx.channel.id and data["open"]:
+            if data["channel_id"] == channel.id and data["open"]:
                 ticket = data
                 ticket_user_id = user_id
                 break
 
         if not ticket:
-            await ctx.send("This is not a valid ticket channel!")
+            await send_message("This is not a valid ticket channel!", ephemeral=True)
             return
 
         # Create transcript
-        await self.create_transcript(ctx.channel, ticket_user_id, ticket["reason"])
+        transcript_path = await self.create_transcript(channel, ticket_user_id, ticket["reason"])
 
         # Close the ticket
         self.ticket_data[ticket_user_id]["open"] = False
         self.save_ticket_data()
 
         # Send closing message
-        await ctx.send("Ticket closed! Creating transcript...")
+        await send_message("Ticket closed! Creating transcript...")
+
+        # Send transcript to staff
+        with open(transcript_path, 'rb') as f:
+            await channel.send(
+                f"Transcript for ticket {channel.name}",
+                file=discord.File(f, filename=f"transcript_{channel.name}.html")
+            )
+
+        # Send transcript to user
+        ticket_user = self.bot.get_user(int(ticket_user_id))
+        if ticket_user:
+            try:
+                with open(transcript_path, 'rb') as f:
+                    await ticket_user.send(
+                        "Here's the transcript of your ticket. Please open it in a web browser to view it properly.",
+                        file=discord.File(f, filename=f"transcript_{channel.name}.html")
+                    )
+            except discord.Forbidden:
+                await channel.send("Could not DM transcript to user (DMs are closed).")
+
         await asyncio.sleep(2)
-        await ctx.channel.delete()
+        await channel.delete()
 
     async def create_transcript(self, channel, user_id, reason):
         # Get all messages
@@ -254,11 +300,4 @@ class Tickets(commands.Cog):
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
-        # Post transcript to logs channel
-        logs_channel = self.bot.get_channel(1361718840488104157)
-        if logs_channel:
-            with open(filename, 'rb') as f:
-                await logs_channel.send(
-                    f"Transcript for ticket {channel.name}",
-                    file=discord.File(f, filename=f"transcript_{channel.name}_{timestamp}.html")
-                )
+        return filename
