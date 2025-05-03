@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime
 import asyncio
+import pytz
 
 # File to store birthday data
 BIRTHDAY_FILE = 'birthdays.json'
