@@ -15,6 +15,7 @@ from cogs.activity import Activity
 from cogs.birthday import Birthday
 from cogs.reference_sheets import ReferenceImages
 from cogs.music import Music
+from cogs.stats_channels import StatsChannels
 
 from discord.ext import tasks
 from discord.ext import commands
@@ -51,6 +52,7 @@ bot.add_cog(Activity(bot))
 bot.add_cog(Birthday(bot))
 bot.add_cog(ReferenceImages(bot))
 bot.add_cog(Music(bot))
+bot.add_cog(StatsChannels(bot))
 
 #Run Bot
 TOKEN = os.environ.get("FLOOF_TOKEN")
