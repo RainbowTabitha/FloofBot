@@ -21,28 +21,61 @@ class TicketButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        # Create a modal for ticket reason
-        modal = TicketModal()
-        await interaction.response.send_modal(modal)
-
-class TicketModal(discord.ui.Modal, title="Create a Support Ticket"):
-    reason = discord.ui.TextInput(
-        label="Reason for ticket",
-        placeholder="Please describe why you're creating this ticket...",
-        style=discord.TextStyle.paragraph,
-        required=True
-    )
-
-    async def on_submit(self, interaction: discord.Interaction):
         # Get the cog instance
         cog = interaction.client.get_cog("Tickets")
         if not cog:
             await interaction.response.send_message("Error: Tickets cog not found!", ephemeral=True)
             return
 
-        # Create the ticket
-        ctx = await interaction.client.get_context(interaction)
-        await cog.ticket(ctx, self.reason.value)
+        # Check if user already has an open ticket
+        if str(interaction.user.id) in cog.ticket_data and cog.ticket_data[str(interaction.user.id)]["open"]:
+            await interaction.response.send_message("You already have an open ticket!", ephemeral=True)
+            return
+
+        # Create ticket channel
+        category = interaction.guild.get_channel(TICKET_CATEGORY_ID)
+        if not category:
+            await interaction.response.send_message("Ticket category not found!", ephemeral=True)
+            return
+
+        # Create ticket channel
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            interaction.guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            interaction.guild.get_role("STAFF"): discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+
+        ticket_channel = await interaction.guild.create_text_channel(
+            f"ticket-{interaction.user.name}",
+            category=category,
+            overwrites=overwrites
+        )
+
+        # Store ticket data
+        cog.ticket_data[str(interaction.user.id)] = {
+            "channel_id": ticket_channel.id,
+            "open": True,
+            "created_at": datetime.now().isoformat(),
+            "reason": "Created via button"
+        }
+        cog.save_ticket_data()
+
+        # Send initial message with delete button
+        embed = discord.Embed(
+            title="Ticket Created",
+            description="Please describe your issue in this channel. Staff will assist you shortly!",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="User", value=interaction.user.mention)
+        embed.add_field(name="Created At", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        embed.set_footer(text="Click the button below to close this ticket")
+
+        view = discord.ui.View()
+        view.add_item(DeleteTicketButton())
+
+        await ticket_channel.send(embed=embed, view=view)
+        await interaction.response.send_message(f"Ticket created! {ticket_channel.mention}", ephemeral=True)
 
 class DeleteTicketButton(discord.ui.Button):
     def __init__(self):
@@ -94,7 +127,7 @@ class Tickets(commands.Cog):
         )
         embed.add_field(
             name="How it works",
-            value="1. Click the 'Create Ticket' button\n2. Enter your reason for creating the ticket\n3. A private channel will be created for you and staff\n4. Staff will assist you as soon as possible!",
+            value="1. Click the 'Create Ticket' button\n2. A private channel will be created for you and staff\n3. Describe your issue in the channel\n4. Staff will assist you as soon as possible!",
             inline=False
         )
         embed.set_footer(text="We'll get back to you as soon as we can!")
@@ -103,59 +136,6 @@ class Tickets(commands.Cog):
         view.add_item(TicketButton())
 
         await ctx.send(embed=embed, view=view)
-
-    @commands.slash_command()
-    async def ticket(self, ctx, reason: str):
-        """Create a new support ticket"""
-        # Check if user already has an open ticket
-        if str(ctx.author.id) in self.ticket_data and self.ticket_data[str(ctx.author.id)]["open"]:
-            await ctx.respond("You already have an open ticket!", ephemeral=True)
-            return
-
-        # Create ticket channel
-        category = ctx.guild.get_channel(TICKET_CATEGORY_ID)
-        if not category:
-            await ctx.respond("Ticket category not found!", ephemeral=True)
-            return
-
-        # Create ticket channel
-        overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.author: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            ctx.guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            ctx.guild.get_role("STAFF"): discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-
-        ticket_channel = await ctx.guild.create_text_channel(
-            f"ticket-{ctx.author.name}",
-            category=category,
-            overwrites=overwrites
-        )
-
-        # Store ticket data
-        self.ticket_data[str(ctx.author.id)] = {
-            "channel_id": ticket_channel.id,
-            "open": True,
-            "created_at": datetime.now().isoformat(),
-            "reason": reason
-        }
-        self.save_ticket_data()
-
-        # Send initial message with delete button
-        embed = discord.Embed(
-            title="Ticket Created",
-            description=f"Reason: {reason}",
-            color=discord.Color.green()
-        )
-        embed.add_field(name="User", value=ctx.author.mention)
-        embed.add_field(name="Created At", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        embed.set_footer(text="Click the button below to close this ticket")
-
-        view = discord.ui.View()
-        view.add_item(DeleteTicketButton())
-
-        await ticket_channel.send(embed=embed, view=view)
-        await ctx.respond(f"Ticket created! {ticket_channel.mention}", ephemeral=True)
 
     @commands.slash_command()
     @commands.has_role("STAFF")
